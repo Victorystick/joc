@@ -1,0 +1,330 @@
+package mjc;
+
+import underscore.*;
+
+import java.util.Map;
+
+import org.antlr.v4.runtime.Token;
+import org.antlr.v4.runtime.tree.ParseTreeProperty;
+
+public class MiniJavaJVMStackalyzer extends MiniJavaBaseListener {
+	private ParseTreeProperty<Symbol> ctxToSym;
+	private int label;
+	private MethodSymbol currentMethod;
+	private ParseTreeProperty<Integer> ctxToSize;
+	private MaxStack stack;
+
+	public MiniJavaJVMStackalyzer(ParseTreeProperty<Symbol> ctxToSym, ParseTreeProperty<Integer> ctxToSize) {
+		this.ctxToSym = ctxToSym;
+		this.ctxToSize = ctxToSize;
+	}
+	
+	public void enterMethodDecl(MiniJavaParser.MethodDeclContext ctx) {
+		stack = new MaxStack();
+	}
+	
+	public void exitMethodDecl(MiniJavaParser.MethodDeclContext ctx) {
+		ctxToSize.put(ctx, stack.getMaximalSize());
+	}
+	
+	public void exitPrint(MiniJavaParser.PrintContext ctx) {
+		stack.push();
+		analyzeExp(ctx.exp());
+		stack.pop();
+		stack.pop();
+	}
+
+	public void exitAssignment(MiniJavaParser.AssignmentContext ctx) {
+		VarSymbol var = (VarSymbol)ctxToSym.get(ctx.identifier());
+
+		if (var.getType() == BuiltIn.INT_ARR && ctx.exp().size() > 1) {
+			stack.push();
+			analyzeExp(ctx.exp().get(0)); // index
+			analyzeExp(ctx.exp().get(1)); // value
+			stack.pop();
+			stack.pop();
+			stack.pop();
+			return;
+		}
+
+		analyzeExp(ctx.exp().get(0)); // value
+		analyzeExp(var, true); // store
+	}
+
+	public void exitReturnStmt(MiniJavaParser.ReturnStmtContext ctx) {
+		analyzeExp(ctx.exp());
+		stack.pop();
+	}
+
+	public void enterIf(MiniJavaParser.IfContext ctx) {
+		analyzeExp(ctx.exp());
+		stack.pop();
+	}
+
+	public void enterWhile(MiniJavaParser.WhileContext ctx) {
+		analyzeExp(ctx.exp());
+		stack.pop();
+	}
+	
+	
+	public void analyzeExp(MiniJavaParser.ExpContext exp) {
+		stack.push();
+	}
+
+	/*
+	public void analyzeExp(MiniJavaParser.ExpContext exp) {
+		if (exp.relational().size() == 1) {
+			analyzeExp(exp.relational().get(0));
+			return;
+		}
+
+		List<MiniJavaParser.RelationalContext> list = exp.relational();
+		int end = label++;
+		analyzeExp(list.get(0));
+		out.println("\tdup");
+		out.format("\tifeq Label%d\n", end);
+
+		for (int i = 1; i < list.size(); i++) {
+			analyzeExp(list.get(i));
+			out.println("\tiand");
+			out.println("\tdup");
+			out.format("\tifeq Label%d\n", end);
+		}
+
+		out.format("Label%d:\n", end);
+	}
+
+	public void analyzeExp(MiniJavaParser.RelationalContext exp) {
+		if (exp.additative().size() == 1) {
+			analyzeExp(exp.additative().get(0));
+			return;
+		}
+
+		analyzeExp(exp.additative().get(0));
+		analyzeExp(exp.additative().get(1));
+		out.println("\tisub");
+	}
+
+	public void analyzeExp(MiniJavaParser.AdditativeContext exp) {
+		if (exp.multiplicative().size() == 1) {
+			analyzeExp(exp.multiplicative().get(0));
+			return;
+		}
+
+		List<MiniJavaParser.MultiplicativeContext> list = exp.multiplicative();
+
+		analyzeExp(list.get(0));
+
+		for (int i = 1; i < list.size(); i++) {
+			analyzeExp(list.get(i));
+
+			if (exp.addOp().get(i - 1).getText().equals("+")) {
+				out.println("\tiadd");
+			} else {
+				out.println("\tisub");
+			}
+		}
+	}
+
+	public void analyzeExp(MiniJavaParser.MultiplicativeContext exp) {
+		if (exp.unary().size() == 1) {
+			analyzeExp(exp.unary().get(0));
+			return;
+		}
+
+		List<MiniJavaParser.UnaryContext> list = exp.unary();
+
+		analyzeExp(list.get(0));
+
+		for (int i = 1; i < list.size(); i++) {
+			analyzeExp(list.get(i));
+			out.println("\timul");
+		}
+	}
+
+	public void analyzeExp(MiniJavaParser.UnaryContext exp) {
+		if (exp instanceof MiniJavaParser.CallContext) {
+			analyzeExp((MiniJavaParser.CallContext) exp);
+			return;
+		}
+
+		if (exp instanceof MiniJavaParser.ArrayIndexContext) {
+			analyzeExp((MiniJavaParser.ArrayIndexContext) exp);
+			return;
+		}
+
+		if (exp instanceof MiniJavaParser.ArrayLengthContext) {
+			analyzeExp((MiniJavaParser.ArrayLengthContext) exp);
+			return;
+		}
+
+		if (exp instanceof MiniJavaParser.PrimContext) {
+			analyzeExp(((MiniJavaParser.PrimContext) exp).primary());
+		}
+	}
+
+	public void analyzeExp(MiniJavaParser.ArrayLengthContext ctx) {
+		analyzeExp(ctx.unary());
+		out.println("\tarraylength");
+	}
+
+	public void analyzeExp(MiniJavaParser.ArrayIndexContext ctx) {
+		analyzeExp(ctx.unary());
+		analyzeExp(ctx.exp());
+		out.println("\tiaload");
+	}
+
+	public void analyzeExp(MiniJavaParser.CallContext ctx) {
+		MethodSymbol ms = (MethodSymbol)ctxToSym.get(ctx);
+
+		analyzeExp(ctx.unary());
+
+		for (MiniJavaParser.ExpContext exp : ctx.exps().exp()) {
+			analyzeExp(exp);
+		}
+
+		out.printf("\tinvokevirtual %s/%s(%s)%s\n",
+			ms.getOwner().getIdentifier(),
+			ms.getIdentifier(),
+			_.join(_.map(ms.paramTypes, typeMapper)),
+			getJasminType(ms.returnType));
+	}
+
+	public void analyzeExp(MiniJavaParser.PrimaryContext ctx) {
+		if (ctx instanceof MiniJavaParser.IdContext) {
+			analyzeExp((VarSymbol)ctxToSym.get(
+				(MiniJavaParser.IdContext) ctx), false);
+			return;
+		}
+
+		if (ctx instanceof MiniJavaParser.NewObjectContext) {
+			analyzeExp((MiniJavaParser.NewObjectContext) ctx);
+			return;
+		}
+
+		if (ctx instanceof MiniJavaParser.NewArrayContext) {
+			analyzeExp((MiniJavaParser.NewArrayContext) ctx);
+			return;
+		}
+
+		if (ctx instanceof MiniJavaParser.NotContext) {
+			analyzeExp((MiniJavaParser.NotContext) ctx);
+			return;
+		}
+
+		if (ctx instanceof MiniJavaParser.ParenExpContext) {
+			analyzeExp(
+				((MiniJavaParser.ParenExpContext) ctx)
+					.exp());
+			return;
+		}
+
+		if (ctx instanceof MiniJavaParser.IntegerContext) {
+			out.printf("\tldc %s\n",
+				((MiniJavaParser.IntegerContext) ctx).getText());
+			return;
+		}
+
+		if (ctx instanceof MiniJavaParser.BooleanContext) {
+			out.printf("\tldc %d\n",
+				((MiniJavaParser.BooleanContext) ctx)
+					.getText().equals("true") ? 1 : 0);
+			return;
+		}
+
+		if (ctx instanceof MiniJavaParser.ThisContext) {
+			out.println("\taload_0 ; this");
+		}
+	}
+
+	public void analyzeExp(MiniJavaParser.NewObjectContext ctx) {
+		ClassSymbol cs = (ClassSymbol)ctxToSym.get(ctx);
+		out.printf("\tnew '%s'\n",
+			cs.getIdentifier());
+		out.println("\tdup");
+		out.printf("\tinvokespecial %s/<init>()V\n",
+			cs.getIdentifier());
+	}
+
+	public void analyzeExp(MiniJavaParser.NewArrayContext ctx) {
+		analyzeExp(ctx.exp());
+		out.println("\tnewarray int");
+	}
+
+	public void analyzeExp(MiniJavaParser.NotContext ctx) {
+		int a = label++;
+		int b = label++;
+
+		analyzeExp(ctx.unary());
+		out.printf("\tifne Label%d\n", a);
+		out.println("\ticonst_1");
+		out.printf("\tgoto Label%d\n", b);
+		out.printf("Label%d:\n", a);
+		out.println("\ticonst_0");
+		out.printf("Label%d:\n", b);
+	}
+
+	public void analyzeExp(VarSymbol var, boolean set) {
+		Symbol owner = var.getOwner();
+
+		String spc = " "; // variable > 3
+		String type = "a"; // load reference
+
+		String load = "load";
+		String get = "get";
+
+		if (set) {
+			load = "store";
+			get = "put";
+		}
+
+		if (var.getType() == BuiltIn.INT || var.getType() == BuiltIn.BOOLEAN) {
+			type = "i"; // load integer
+		}
+
+		if (owner instanceof ClassSymbol) {
+			out.printf("\taload_0 ; this\n");
+			if (set) {
+				out.println("\tswap");
+			}
+			out.printf("\t%sfield %s/%s %s ; this.%s\n",
+				get,
+				owner.getIdentifier(),
+				var.getIdentifier(),
+				getJasminType(var.getType()),
+				var.getIdentifier());
+		} else {
+			int i = ((VarIndexer) owner).indexOf(var);
+
+			if (i < 4) {
+				spc = "_";
+			}
+
+			out.printf("\t%s%s%s%d ; %s\n",
+				type, load, spc, i, var.getIdentifier());
+		}
+	}*/
+	
+	private class MaxStack {
+		int size = 0;
+		int maximalSize = 0;
+		
+		public void push() {
+			size++;
+			if (size > maximalSize) maximalSize = size;
+		}
+		
+		public void pop() {
+			size--;
+		}
+		
+		public int Size() {
+			return size;
+		}
+		
+		public int getMaximalSize() {
+			return maximalSize;
+		}
+	}
+	
+}

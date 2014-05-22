@@ -1,0 +1,59 @@
+
+fn map(arr int[n], fn (int): int): res int[n] {
+	for v, i in arr {
+		res[i] = fn(v)
+	}
+}
+
+fn add1(i int): j int {
+	j = i + 1
+}
+
+fn main() {
+	arr = int[1, 2, 3, 4]
+
+	print(map(arr, add1))
+}
+
+class Main {
+	public static void main(String[] args) {
+		Underscore _;
+		Mapper m;
+		int[] arr;
+
+		arr = new int[4];
+		arr[0] = 1;
+		arr[1] = 2;
+		arr[2] = 3;
+		arr[3] = 4;
+
+		_ = new Underscore();
+		m = new Add1();
+
+		System.out.println(_.map(arr, m));
+	}
+}
+
+class Underscore {
+	public int[] map(int[] arr, Mapper m) {
+		int[] res;
+		int i;
+
+		res = new int[arr.length];
+
+		while (i < res.length) {
+			res[i] = m.map();
+			i = i + 1;
+		}
+
+		return res;
+	}
+}
+
+class Mapper {
+	public int map(int i) { return i; }
+}
+
+class Add1 extends Mapper {
+	public int map(int i) { return i + 1; }
+}

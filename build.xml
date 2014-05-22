@@ -1,0 +1,142 @@
+<project name="mjc" default="jar">
+	<property name="src.dir" value="src"/>
+	<property name="build.dir" value="build"/>
+	<property name="bin.dir" value="bin"/>
+
+	<property name="antlr.jar" value="lib/antlr-4.2-complete.jar"/>
+	<property name="grammar" value="${src.dir}/MiniJava.g4"/>
+
+	<property name="target.cpu" value="ARM"/>
+
+	<!-- <property name="test.group" value="2014L17/"/>
+	<property name="test.class" value="execute"/>
+	<property name="test.current" value="FizzBuzz"/>
+	<property name="tests.dir" value="student-tests-2014"/> -->
+
+	<!-- <property name="test.group" value="2014G05/"/>
+	<property name="test.class" value="execute"/>
+	<property name="test.current" value="BFInterpreter"/>
+	<property name="tests.dir" value="student-tests-2014"/> -->
+
+	 <property name="test.group" value=""/>
+	<property name="test.class" value="execute"/>
+	<property name="test.current" value="ArrayList"/>
+	<property name="tests.dir" value="tests"/>
+
+	<property name="test.path" value="${test.class}/${test.group}${test.current}.java"/>
+	<property name="test.flags" value=""/>
+
+	<target name="compile" depends="compilecompiler">
+		<copy todir="${build.dir}">
+			<fileset dir="${src.dir}">
+			    <include name="**/*.java"/>
+			    <exclude name="*.g4"/>
+			</fileset>
+		</copy>
+
+		<mkdir dir="${bin.dir}"/>
+		<javac srcdir="${build.dir}"
+         destdir="${bin.dir}"
+         classpath="${build.dir}:${antlr.jar}"
+         debug="on"
+		 includeantruntime="false">
+			<compilerarg value="-Xlint:unchecked"/>
+		</javac>
+	</target>
+
+	<target name="compilecompiler">
+		<mkdir dir="${build.dir}/${ant.project.name}/minijava"/>
+		<java  jar="${antlr.jar}" classpath="${antlr.jar}" fork="true">
+			<arg value="-o"/>
+			<arg value="${build.dir}/"/>
+			<arg value="${grammar}"/>
+		</java>
+		<move todir="${build.dir}/${ant.project.name}/minijava">
+			<fileset dir="${build.dir}/${src.dir}"/>
+		</move>
+	</target>
+
+	<target name="jar" depends="compile">
+		<jar destfile="${ant.project.name}.jar" basedir="${bin.dir}">
+			<manifest>
+				<attribute name="Main-Class" value="mjc.Main"/>
+				<attribute name="Class-Path" value="${antlr.jar}"/>
+			</manifest>
+		</jar>
+		<chmod file="${ant.project.name}.jar" perm="ugo+rx" />
+	</target>
+
+	<target name="clean">
+		<delete dir="${bin.dir}" failonerror="false" quiet="true"/>
+		<delete quiet="true" verbose="true">
+			<fileset dir="." includes="**/*.class"/>
+		</delete>
+		<delete dir="${build.dir}" failonerror="false" quiet="true"/>
+		<delete file="${ant.project.name}.jar" quiet="true" verbose="true"/>
+		<delete file="johfog_oskarseg.tar.gz" quiet="true" verbose="true"/>
+		<delete quiet="true" verbose="true">
+			<fileset dir="." includes="**/*~"/>
+		</delete>
+		<delete quiet="true" verbose="true">
+			<fileset dir="." includes="**/*.j"/>
+		</delete>
+		<delete quiet="true" verbose="true">
+			<fileset dir="." includes="**/*.s"/>
+		</delete>
+	</target>
+
+	<target name="run">
+		<exec executable="./test.sh">
+			<arg value="${tests.dir}/${test.path}"/>
+			<arg value="${target.cpu}"/>
+		</exec>
+	</target>
+
+	<target name="pirun" >
+		<java jar="./mjc.jar" fork="true">
+			<arg value="${tests.dir}/${test.path}"/>
+			<arg value="--target=ARM"/>
+			<arg value="-wdS"/>
+		</java>
+
+		<scp todir="komp@motherbrain.zephyyrr.se:mjc/"
+			port="3678"
+			trust="true"
+			sftp="true"
+			keyfile="komp14.priv">
+			<fileset file="./${test.current}.s" />
+		</scp>
+
+		<sshexec host="motherbrain.zephyyrr.se"
+			port="3678"
+			username="komp"
+			trust="true"
+			keyfile="komp14.priv"
+			timeout="60000"
+			command="mjc/tester.sh ${test.current}.s ${test.flags}" />
+	</target>
+
+	<property name="tar.file" value="johfog_oskarseg.tar.gz"/>
+
+	<target name="tar" depends="clean">
+		<tar destfile="${tar.file}" compression="gzip" includesfile="includes">
+			<tarfileset dir="lib" prefix="minijava/lib">
+			</tarfileset>
+			<tarfileset dir="src" prefix="minijava/src">
+				<exclude name="*.class" />
+			</tarfileset>
+			<tarfileset file="DESC" prefix="minijava"/>
+			<tarfileset file="build.xml" prefix="minijava"/>
+			<tarfileset file="report.pdf" prefix="minijava"/>
+			<tarfileset file="runtime.c" prefix="minijava/src"/>
+		</tar>
+	</target>
+
+	<target name="submit" depends="tar">
+		<exec executable="./submit.sh">
+			<arg value="${tar.file}"/>
+		</exec>
+	</target>
+
+	<target name="all" depends="clean, jar, run" />
+</project>
