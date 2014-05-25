@@ -5,6 +5,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 
 public class _ {
 	public static <T> String join(List<T> list) {
@@ -45,6 +46,20 @@ public class _ {
 
 		for (F elem : list) {
 			res.add(mapper.map(elem));
+		}
+
+		return res;
+	}
+
+	public static <F, T> List<T> map(Collection<F> list, Map<F, T> map) {
+		ArrayList<T> res = new ArrayList<T>(list.size());
+
+		if (list.size() == 0) {
+			return res;
+		}
+
+		for (F elem : list) {
+			res.add(map.get(elem));
 		}
 
 		return res;
