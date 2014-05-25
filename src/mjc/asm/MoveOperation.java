@@ -9,20 +9,19 @@ import underscore._;
 import underscore.Mapper;
 
 public class MoveOperation extends Operation {
-	public static Instruction create(String a, Temp... ts) {
-		return new MoveOperation(a, Arrays.asList(ts));
+	public static Instruction create(String a, Temp def, Temp use) {
+		return new MoveOperation(a, Arrays.asList(def, use), use, def);
 	}
 
-	MoveOperation(String a, List<Temp> ts) {
+	public static Instruction createInverted(String a, Temp use, Temp def) {
+		return new MoveOperation(a, Arrays.asList(use, def), use, def);
+	}
+
+	MoveOperation(String a, List<Temp> ts, Temp use, Temp def) {
 		super(a, ts);
 
-		defined = ts.subList(0, 1);
-
-		if (ts.size() > 1) {
-			used = ts.subList(1, 2);
-		} else {
-			used = Collections.<Temp>emptyList();
-		}
+		defined = Arrays.asList(def);
+		used = Arrays.asList(use);
 	}
 
 	public String allocate(Mapper<Temp, String> allocator) {

@@ -7,6 +7,7 @@ import java.util.List;
 import mjc.alloc.*;
 import mjc.asm.Coder;
 import mjc.asm.InstructionSequence;
+import mjc.asm.InstructionSet;
 import mjc.frame.FrameFactory;
 import mjc.ir.StmtSequence;
 import mjc.ir.Temp;
@@ -21,23 +22,33 @@ public abstract class IRMain extends Main {
 	private final CompilerOptions options;
 
 	public IRMain(final String filename, final CompilerOptions opts,
-			final FrameFactory ff, final Coder c) throws Exception {
+			final FrameFactory frameFactory, final Coder c) throws Exception {
 		super(filename, opts);
 
 		options = opts;
 
 		try {
-			MiniJavaIRBuilder irBuilder = new MiniJavaIRBuilder(ff, ctxToSym);
+			MiniJavaIRBuilder irBuilder = new MiniJavaIRBuilder(frameFactory, ctxToSym);
 
 			walker.walk(irBuilder, tree);
 
 			c.generateData(irBuilder.data);
 
+			InstructionSet is = frameFactory.getInstructionSet();
+
 			StringBuilder asm = new StringBuilder();
-			asm.append(".data\n");
+
+			asm.append(is.beginData());
+			asm.append("\n");
+
 			asm.append(c.doneData());
-			asm.append(".text\n");
-			asm.append(".global main\n");
+			asm.append("\n");
+
+			asm.append(is.endData());
+			asm.append("\n");
+
+			asm.append(is.beginCode());
+			asm.append("\n");
 
 			Mapper<Temp, String> mapper =
 				new Mapper<Temp, String>() {
@@ -46,7 +57,7 @@ public abstract class IRMain extends Main {
 							return null;
 						}
 
-						String s = ff.map(t);
+						String s = frameFactory.map(t);
 
 						if (s != null) {
 							return s;
@@ -57,24 +68,29 @@ public abstract class IRMain extends Main {
 				};
 
 			Allocator allocator =
-				new OptimisticAllocator(opts, ff);
-				// new ColoringAllocator(opts, ff);
+				new OptimisticAllocator(opts, frameFactory);
+				// new ColoringAllocator(opts, frameFactory);
 
 			InstructionSequence function;
 
-			for (Function f : irBuilder.funcs) {
-				// debug(f.body);
+			for (Function func : irBuilder.funcs) {
+				if (func.isExported()) {
+					asm.append(is.export(func.getName()));
+					asm.append("\n");
+				}
 
-				function = c.generateCode(f.frame, f.body);
-				// Errors.debug(function.toString());
+				function = c.generateCode(func.frame, func.body);
+
 				allocator.allocate(function);
 
-				asm.append("\n");
-				asm.append(".ltorg\n");
 				asm.append(function.allocateAll(
 					this.<Temp, Temp, String>chainMap(
 						allocator.getMapper(), mapper)));
+				asm.append("\n");
 			}
+
+			asm.append(is.endCode());
+			asm.append("\n");
 
 			if (!Errors.fine()) {
 				Errors.print();
@@ -103,6 +119,8 @@ public abstract class IRMain extends Main {
 				// We're done here.
 				return;
 			}
+
+			// TODO: Try to output binary...
 
 		} catch (Exception e) {
 			e.printStackTrace();

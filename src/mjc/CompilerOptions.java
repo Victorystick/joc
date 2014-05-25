@@ -15,7 +15,7 @@ public class CompilerOptions implements Cloneable {
 	public final Backend backend;
 
 	public enum Backend {
-		JVM("jvm"), ARM("arm"), MIPS("mips");
+		JVM("jvm"), ARM("arm"), X64("x64"), MIPS("mips");
 
 		private final String target;
 
@@ -107,7 +107,7 @@ public class CompilerOptions implements Cloneable {
 
 		return new CompilerOptions(backend, debug, generics, assembly, warnings);
 	}
-	
+
 	public static CompilerOptions getDefaults() {
 		try {
 		return (CompilerOptions) defaults.clone();
@@ -133,9 +133,9 @@ public class CompilerOptions implements Cloneable {
 		System.out.println("  -d, --debug             produce debugging messages");
 		System.out.println("  -g, --generics          enable generics support");
 		System.out.println("  -w, --warnings          produce warnings for code");
-		System.out.format( "  --target=[arm|jvm]      output target            (default %s)\n", defaults.backend);
+		System.out.format( "  --target=[arm|jvm|x64]  output target            (default %s)\n", defaults.backend);
 	}
-	
+
 	@Override
 	public Object clone() throws CloneNotSupportedException {
 		return super.clone();

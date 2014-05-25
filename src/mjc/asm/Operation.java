@@ -33,7 +33,7 @@ public class Operation extends Instruction {
 		temps = ts;
 	}
 
-	Operation(String a, List<Temp> ts, int[] def, int[] use) {
+	public Operation(String a, List<Temp> ts, int[] def, int[] use) {
 		super(a);
 		temps = ts;
 

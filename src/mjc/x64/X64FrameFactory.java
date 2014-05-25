@@ -1,4 +1,4 @@
-package mjc.arm;
+package mjc.x64;
 
 import java.util.List;
 import mjc.frame.Frame;
@@ -7,13 +7,9 @@ import mjc.ir.Temp;
 import mjc.ir.Label;
 import mjc.asm.InstructionSet;
 
-public class ARMFrameFactory extends FrameFactory {
-	static final Temp fp = ARMFrame.$frame;
-	static final Temp lr = ARMFrame.$link;
-	static final Temp pc = ARMFrame.$counter;
-
+public class X64FrameFactory extends FrameFactory {
 	public int getWordSize() {
-		return ARMFrame.WORDSIZE;
+		return X64Frame.WORDSIZE;
 	}
 
 	public Frame create(Label l, int narg) {
@@ -21,22 +17,22 @@ public class ARMFrameFactory extends FrameFactory {
 	}
 
 	public Frame create(Label l, boolean[] args) {
-		return new ARMFrame(l, args);
+		return new X64Frame(l, args);
 	}
 
 	public List<Temp> getAvailable() {
-		return ARMFrame.available;
+		return X64Frame.available;
 	}
 
 	public List<Temp> getRegisters() {
-		return ARMFrame.registers;
+		return X64Frame.registers;
 	}
 
 	public String map(Temp t) {
-		return ARMFrame.t2s.get(t);
+		return X64Frame.t2s.get(t);
 	}
 
 	public InstructionSet getInstructionSet() {
-		return ARMInstructionSet.getInstance();
+		return X64InstructionSet.getInstance();
 	}
 }

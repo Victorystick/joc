@@ -85,7 +85,7 @@ public class MiniJavaIRBuilder extends MiniJavaBaseListener {
 			localVariables.put(var, Temp.create(var));
 		}
 
-		mainFunc = new Function(frame, StmtSequence.create(
+		mainFunc = new Function("main", true, frame, StmtSequence.create(
 			ir(ctx.stmt()),
 			Move.create(frame.getReturnReg(), Const.create(0))
 		));
@@ -115,7 +115,7 @@ public class MiniJavaIRBuilder extends MiniJavaBaseListener {
 			localVariables.put(var, Temp.create(var));
 		}
 
-		funcs.add(new Function(frame,	StmtSequence.create(
+		funcs.add(new Function(method.getIdentifier(), false, frame, StmtSequence.create(
 			ir(methodCtx.stmt()),
 			Move.create(frame.getReturnReg(), ir(methodCtx.returnStmt()))
 		)));
@@ -433,7 +433,7 @@ public class MiniJavaIRBuilder extends MiniJavaBaseListener {
 			args.add(ir(exp));
 		}
 
-		
+
 		if (!justCreated && !ctx.unary().getText().equals("this")) {
 			seq.then(If.create(
 					Binary.create(

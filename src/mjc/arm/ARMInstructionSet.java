@@ -31,6 +31,27 @@ public class ARMInstructionSet extends ReducedInstructionSet {
 		_12 = new int[] { 1, 2 },
 		_123456789 = new int[] { 1, 2, 3, 4, 5, 6, 7, 8, 9 };
 
+	// --------- META --------
+	public String beginData() {
+		return ".data";
+	}
+
+	public String endData() {
+		return "";
+	}
+
+	public String beginCode() {
+		return ".text";
+	}
+
+	public String endCode() {
+		return "";
+	}
+
+	public String export(String name) {
+		return ".global " + name;
+	}
+
 	// --------- DATA --------
 	private static int alignment = 0;
 	private void align(int a) {
@@ -176,11 +197,11 @@ public class ARMInstructionSet extends ReducedInstructionSet {
 	}
 
 	public Instruction move(Temp target, Temp source) {
-		// if (target == source) {
-		// 	System.err.println(target == source);
-		// 	return null;
-		// }
 		return MoveOperation.create("mov     %s, %s", target, source);
+	}
+
+	public Instruction move(Temp target, Const c) {
+		return move(target, c.value);
 	}
 
 	private Instruction move(Temp target, int c) {
@@ -207,11 +228,7 @@ public class ARMInstructionSet extends ReducedInstructionSet {
 			_0, _, target);
 	}
 
-	public Instruction move(Temp target, Const c) {
-		return move(target, c.value);
-	}
-
-	public Instruction mvn(Temp target, Temp source) {
+	public Instruction not(Temp target, Temp source) {
 		return Operation.create("mvn     %s, %s",
 			_0, _1, target, source);
 	}
@@ -325,7 +342,7 @@ public class ARMInstructionSet extends ReducedInstructionSet {
 
 	public Instruction or(Temp target, Temp val, Const c) {
 		if (c.value <= 255 && c.value >= 0) {
-			return Operation.create("arr     %s, %s, #" + c.value,
+			return Operation.create("orr     %s, %s, #" + c.value,
 				_0, _1, target, val);
 		}
 
@@ -432,12 +449,6 @@ public class ARMInstructionSet extends ReducedInstructionSet {
 		return InstructionSequence.create(
 			move(ARMFrame.$scratch, c),
 			cmpeq(target, val, ARMFrame.$scratch));
-	}
-
-	public Instruction not(Temp target, Temp val) {
-		return InstructionSequence.create(
-			mvn(target, val),
-			add(target, Const.TWO));
 	}
 
 	public Instruction cmpneq(Temp target, Temp val, Temp other) {

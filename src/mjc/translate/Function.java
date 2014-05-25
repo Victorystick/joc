@@ -6,10 +6,14 @@ import mjc.ir.StmtSequence;
 import mjc.canon.Canon;
 
 public class Function {
+	private final String name;
+	private final boolean exported;
 	public final Frame frame;
 	public final StmtSequence body;
 
-	public Function (Frame f, IRStatement b) {
+	public Function(String n, boolean ex, Frame f, IRStatement b) {
+		name = n;
+		exported = ex;
 		frame = f;
 		body = Canon.fix(f.viewShift(b));
 	}
@@ -25,5 +29,13 @@ public class Function {
 		sb.append("}");
 
 		return sb.toString();
+	}
+
+	public String getName() {
+		return name;
+	}
+
+	public boolean isExported() {
+		return exported;
 	}
 }

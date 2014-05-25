@@ -1,4 +1,4 @@
-package mjc.arm;
+package mjc.x64;
 
 import java.util.Arrays;
 import java.util.ArrayList;
@@ -11,16 +11,16 @@ import mjc.frame.Access;
 import mjc.frame.Frame;
 import mjc.ir.*;
 
-public class ARMFrame extends Frame {
-	private static final ARMInstructionSet is =
-		ARMInstructionSet.getInstance();
-	public static final int WORDSIZE = 4;
+public class X64Frame extends Frame {
+	private static final X64InstructionSet is =
+		X64InstructionSet.getInstance();
+	public static final int WORDSIZE = 8;
 
 	public static final Temp
-		a0       = Temp.create(true), // 0
-		a1       = Temp.create(true), // 1
-		a2       = Temp.create(true), // 2
-		a3       = Temp.create(true), // 3
+		r0       = Temp.create(true), // 0
+		r1       = Temp.create(true), // 1
+		r2       = Temp.create(true), // 2
+		r3       = Temp.create(true), // 3
 		r4       = Temp.create(true), // 4
 		r5       = Temp.create(true), // 5
 		r6       = Temp.create(true), // 6
@@ -28,67 +28,87 @@ public class ARMFrame extends Frame {
 		r8       = Temp.create(true), // 8
 		r9       = Temp.create(true), // 9
 		r10      = Temp.create(true), // 10
-		$frame   = Temp.create(true), // 11
-		$scratch = Temp.create(true), // 12
-		$stack   = Temp.create(true), // 13
-		$link    = Temp.create(true), // 14
-		$counter = Temp.create(true); // 15
+		r11      = Temp.create(true), // 11
+		r12      = Temp.create(true), // 12
+		r13      = Temp.create(true), // 13
+		r14      = Temp.create(true), // 14
+		r15      = Temp.create(true); // 15
+
+	public static final Temp
+		eax = r0,
+		ebx = r1,
+		ecx = r2,
+		edx = r3,
+
+		esp = r4,
+		ebp = r5,
+		esi = r6,
+		edi = r7,
+
+		r8d = r8,
+		r9d = r9,
+		r10d = r10,
+		r11d = r11,
+
+		r12d = r12,
+		r13d = r13,
+		r14d = r14,
+		r15d = r15,
+
+		$stack = esp,
+		$frame = ebp;
+
 
 	public static final List<Temp> registers = Arrays.asList(
-			a0, a1, a2, a3, r4, r5, r6, r7, r8, r9, r10,
-			$frame, $scratch, $stack, $link, $counter
+			r0, r1, r2, r3, r4, r5, r6, r7,
+			r8, r9, r10, r11, r12, r13, r14, r15
 		);
 
 	public static final List<Temp> available = Arrays.asList(
-			a0, a1, a2, a3, r4, r5, r6, r7, r8, r9, r10, $frame
+			eax, ebx, ecx, edx, ebp, esi, edi,
+			r8d, r9d, r10d, r11d, r12d, r13d, r14d, r15d
 		);
 
 	public static final List<Temp> volatyle = Arrays.asList(
-			// a1, a2, a3,
-			// $scratch, $link
+			r10d, r11d
 		);
 
 	static final List<Temp>
 		specials = Arrays.asList(
-			$stack, $link, $counter
+			r13d, r14d, r15d
 		),
 		arguments = Arrays.asList(
-			a0, a1, a2, a3
+			edi, esi, edx, ecx, r8d, r9d
 		),
 		callee_saved = Arrays.asList(
-			r4, r5, r6, r7, r8, r9, r10, $frame
-		),
-		caller_saved = Arrays.asList(
-			$scratch
+			ebx, esp, ebp, r12d, r13d, r14d, r15d
 		),
 		calldefs = Arrays.asList(
-			// a0
-			a0, a1, a2, a3
-			// $scratch, $link
+			eax, ecx, edx, esi, edi, r8d, r9d
 		),
 		returnSink = Arrays.asList(
-			a0, r4, r5, r6, r7, r8, r9, r10, //$frame,
-			$stack, //$link,
-			$counter
+			// r0, r4, r5, r6, r7, r8, r9, r10, //r11,
+			// r13, //r14,
+			// r15
 		);
 
 	static final Map<Temp, String> t2s = new HashMap<Temp, String>() {{
-		put(a0,      "r0");  // argument / scratch
-		put(a1,      "r1");
-		put(a2,      "r2");
-		put(a3,      "r3");
-		put(r4,      "r4");  // variable
-		put(r5,      "r5");
-		put(r6,      "r6");
-		put(r7,      "r7");
-		put(r8,      "r8");
-		put(r9,      "r9");  // platform specific
-		put(r10,     "r10"); // variable
-		put($frame,  "fp");  // Frame Pointer / variable
-		put($scratch,"ip");  // Intra-Procedure-call scratch
-		put($stack,  "sp");  // Stack Pointer
-		put($link,   "lr");  // Link Register
-		put($counter,"pc");  // Program Counter
+		put(r0,      "%rax"); // argument / scratch
+		put(r1,      "%rbx");
+		put(r2,      "%rcx");
+		put(r3,      "%rdx");
+		put(r4,      "%rsp"); // variable
+		put(r5,      "%rbp");
+		put(r6,      "%rsi");
+		put(r7,      "%rdi"); // stack pointer?
+		put(r8,      "%r8");
+		put(r9,      "%r9");  // platform specific
+		put(r10,     "%r10"); // variable
+		put(r11,     "%r11");  // Frame Pointer / variable
+		put(r12,     "%r12");  // Intra-Procedure-call scratch
+		put(r13,     "%r13");  // Stack Pointer
+		put(r14,     "%r14");  // Link Register
+		put(r15,     "%r15");  // Program Counter
 	}};
 
 	private boolean makesACall = false;
@@ -98,7 +118,7 @@ public class ARMFrame extends Frame {
 	private final int ARGS_IN_REGISTERS = arguments.size();
 	private static final int PUSH_REGS = volatyle.size();
 
-	ARMFrame(Label label, boolean[] args) {
+	X64Frame(Label label, boolean[] args) {
 		super(label);
 
 		params = new ArrayList<Access>(args.length);
@@ -156,8 +176,8 @@ public class ARMFrame extends Frame {
 				Memory.create(
 					Binary.create(
 						BinOp.PLUS,
-						$stack,
-						(i - ARGS_IN_REGISTERS) * WORDSIZE)),
+						r13,
+						(i - ARGS_IN_REGISTERS) * WORDSIZE / 2)),
 				val);
 		}
 	}
@@ -171,7 +191,7 @@ public class ARMFrame extends Frame {
 	}
 
 	public Temp getReturnReg() {
-		return a0;
+		return eax;
 	}
 
 	public IRStatement viewShift(IRStatement body) {
@@ -181,16 +201,16 @@ public class ARMFrame extends Frame {
 		// 	if (i < arguments.size()) {
 		// 		seq.then(
 		// 			Move.create(
-		// 				params.get(i).value($frame),
+		// 				params.get(i).value(r11),
 		// 				arguments.get(i)));
 		// 	} else {
 		// 		seq.then(
 		// 			Move.create(
-		// 				params.get(i).value($frame),
+		// 				params.get(i).value(r11),
 		// 				Memory.create(
 		// 					Binary.create(
 		// 						BinOp.PLUS,
-		// 						$frame,
+		// 						r11,
 		// 						(params.size() - i) * WORDSIZE))));
 		// 	}
 		// }
@@ -203,30 +223,19 @@ public class ARMFrame extends Frame {
 		seq.then(Operation.createUse(returnSink));
 	}
 
-	private static Temp[]
-		stmdb = new Temp[]
-			{ $stack, r4, r5, r6, r7, r8, r9, r10, $frame, $link },
-		ldmia = new Temp[]
-			{ $stack, r4, r5, r6, r7, r8, r9, r10, $frame, $counter };
-
 	/**
 	 * Opens a function frame
 	 */
 	public void openFunction(InstructionSequence seq) {
 		seq
-			.then(Operation.create(".ltorg"))
+			.then(Operation.create(".type  " + name.label + ", @function"))
 			.then(is.comment("Function " + name.label))
 			.then(is.label(name))
-			.then(Operation.createDef(registers));
-			// .then(Operation.create("stmfd   sp!, {fp, lr}"))
-			// .then(is.add($frame, $stack, Const.create(4)))
-			// .then(Operation.create("stmfd   sp!, {r4-r10}"))
-			// .then(Operation.createUse(callee_saved));
-
-		seq
-			.then(Operation.create("push    {r4-r11, lr}"))
-			.then(is.sub($stack, $stack,
-				Const.create(maximumStackArguments * WORDSIZE)))
+			.then(Operation.createDef(registers))
+			// .then(Operation.create("enter   " +
+			// 	maximumStackArguments * WORDSIZE / 2 + ", 0"))
+			// .then(is.sub($stack, $stack,
+			// 	Const.create(maximumStackArguments * WORDSIZE / 2)))
 			.then(Operation.createUse(callee_saved));
 
 		// if (makesACall) {
@@ -237,14 +246,14 @@ public class ARMFrame extends Frame {
 		seq.then(Operation.createDef(arguments));
 
 		for (int i = 0; i < params.size(); i++) {
-			Temp t = (Temp) params.get(i).value($frame);
+			Temp t = (Temp) params.get(i).value(r11);
 
 			seq.then(is.comment("def: " + t));
 
 			if (i < ARGS_IN_REGISTERS) {
 				seq.then(is.move(t, arguments.get(i)));
 			} else {
-				// seq.then(is.load(t, $frame,
+				// seq.then(is.load(t, r11,
 				// 	Const.create((i - ARGS_IN_REGISTERS + 1) * WORDSIZE)));
 
 				seq.then(is.load(t, $stack,
@@ -265,15 +274,13 @@ public class ARMFrame extends Frame {
 		// }
 
 		seq
-			.then(is.add($stack, $stack,
-				Const.create(maximumStackArguments * WORDSIZE)))
-			.then(Operation.create("pop     {r4-r11, pc}"))
-			// .then(Operation.create("ldmfd   sp!, {r4-r10}"))
+			// .then(is.add($stack, $stack,
+			// 	Const.create(maximumStackArguments * WORDSIZE / 2)))
+			// .then(Operation.create("leave"))
 			.then(Operation.createDef(callee_saved))
-			// .then(is.sub($stack, $frame, Const.create(4)))
-			// .then(Operation.create("ldmfd   sp!, {fp, pc}"))
-			.then(Operation.createDef(Arrays.asList($frame, $counter)))
+			.then(Operation.createDef(Arrays.asList(r11, r15)))
 			.then(Operation.createUse(returnSink))
+			.then(Operation.create("ret"))
 			.then(is.comment("End " + name.label));
 	}
 
@@ -286,7 +293,7 @@ public class ARMFrame extends Frame {
 	}
 
 	public void toString(StringBuilder sb) {
-		sb.append("{\"<ARMFrame>\":");
+		sb.append("{\"<X64Frame>\":");
 		name.toString(sb);
 		sb.append("}");
 	}

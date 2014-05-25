@@ -3,6 +3,7 @@ package mjc.frame;
 import java.util.List;
 import mjc.ir.Temp;
 import mjc.ir.Label;
+import mjc.asm.InstructionSet;
 import underscore.Mapper;
 
 abstract public class FrameFactory implements Mapper<Temp, String> {
@@ -23,4 +24,6 @@ abstract public class FrameFactory implements Mapper<Temp, String> {
 	public Frame create(String name, boolean[] args) {
 		return create(Label.create(name), args);
 	}
+
+	abstract public InstructionSet getInstructionSet();
 }

@@ -29,6 +29,7 @@ public class Main {
 		switch (co.backend) {
 			case JVM: new JVMMain(argList.get(0), co); break;
 			case ARM: new ARMMain(argList.get(0), co); break;
+			case X64: new X64Main(argList.get(0), co); break;
 			default:
 				System.out.println("Not implemented yet. ;)");
 				System.exit(1);
