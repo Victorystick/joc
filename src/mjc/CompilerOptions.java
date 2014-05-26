@@ -13,6 +13,7 @@ public class CompilerOptions implements Cloneable {
 	public final boolean assembly;
 	public final boolean warnings;
 	public final Backend backend;
+	public final Frontend frontend;
 
 	public enum Backend {
 		JVM("jvm"), ARM("arm"), X64("x64"), MIPS("mips");
@@ -28,8 +29,22 @@ public class CompilerOptions implements Cloneable {
 		}
 	}
 
+	public enum Frontend {
+		MiniJava("minijava"), LISP("lisp"), Cyba("cyba");
+		private final String lang;
+
+		Frontend(String l) {
+			this.lang = l;
+		}
+
+		public String toString() {
+			return lang;
+		}
+	}
+
 	public CompilerOptions(Backend be) {
 		backend = be;
+		frontend = Frontend.MiniJava;
 		debug = false;
 		generics = false;
 		assembly = false;
@@ -38,6 +53,7 @@ public class CompilerOptions implements Cloneable {
 
 	public CompilerOptions(Backend be, boolean d, boolean g, boolean s, boolean w) {
 		backend = be;
+		frontend = Frontend.MiniJava;
 		debug = d;
 		generics = g;
 		assembly = s;
@@ -119,6 +135,7 @@ public class CompilerOptions implements Cloneable {
 
 	public void print() {
 		System.out.println("Compiler options:");
+		System.out.format("\tlanguage : %s\n", frontend);
 		System.out.format("\ttarget   : %s\n", backend);
 		System.out.format("\tdebug    : %b\n", debug);
 		System.out.format("\tgenerics : %b\n", generics);
@@ -129,11 +146,12 @@ public class CompilerOptions implements Cloneable {
 
 	public static void printFlags() {
 		System.out.println("Options:");
-		System.out.println("  -S, --assembly          Compile only; do not assemble or link");
-		System.out.println("  -d, --debug             produce debugging messages");
-		System.out.println("  -g, --generics          enable generics support");
-		System.out.println("  -w, --warnings          produce warnings for code");
-		System.out.format( "  --target=[arm|jvm|x64]  output target            (default %s)\n", defaults.backend);
+		System.out.println("  -S, --assembly                   Compile only; do not assemble or link");
+		System.out.println("  -d, --debug                      Produce debugging messages");
+		System.out.println("  -g, --generics                   Enable generics support");
+		System.out.println("  -w, --warnings                   Produce warnings for code");
+		System.out.format( "  --target=[arm|jvm|x64]           Output target               (default %s)\n", defaults.backend);
+		System.out.format( "  --language=[minijava|lisp|cyba]  Compile language selection  (default %s)\n", defaults.frontend);
 	}
 
 	@Override
