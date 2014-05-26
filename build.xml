@@ -29,6 +29,7 @@
 	<property name="test.flags" value=""/>
 	
 	<target name="requirements">
+		<mkdir dir="${lib.dir}"/>
 		<get src="http://antlr.org/download/${antlr.jar}"
 			dest="${lib.dir}/"
 			skipexisting="true" />
