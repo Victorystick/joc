@@ -2,11 +2,13 @@
 	<property name="src.dir" value="src"/>
 	<property name="build.dir" value="build"/>
 	<property name="bin.dir" value="bin"/>
+	<property name="lib.dir" value="lib"/>
 
-	<property name="antlr.jar" value="lib/antlr-4.2-complete.jar"/>
+	
+	<property name="antlr.jar" value="antlr-4.2-complete.jar"/>
 	<property name="grammar" value="${src.dir}/MiniJava.g4"/>
 
-	<property name="target.cpu" value="ARM"/>
+	<property name="target.cpu" value="X64"/>
 
 	<!-- <property name="test.group" value="2014L17/"/>
 	<property name="test.class" value="execute"/>
@@ -20,11 +22,17 @@
 
 	 <property name="test.group" value=""/>
 	<property name="test.class" value="execute"/>
-	<property name="test.current" value="ArrayList"/>
+	<property name="test.current" value="Factorial"/>
 	<property name="tests.dir" value="tests"/>
 
 	<property name="test.path" value="${test.class}/${test.group}${test.current}.java"/>
 	<property name="test.flags" value=""/>
+	
+	<target name="requirements">
+		<get src="http://antlr.org/download/${antlr.jar}"
+			dest="${lib.dir}/"
+			skipexisting="true" />
+	</target>
 
 	<target name="compile" depends="compilecompiler">
 		<copy todir="${build.dir}">
@@ -37,7 +45,7 @@
 		<mkdir dir="${bin.dir}"/>
 		<javac srcdir="${build.dir}"
          destdir="${bin.dir}"
-         classpath="${build.dir}:${antlr.jar}"
+         classpath="${build.dir}:${lib.dir}/${antlr.jar}"
          debug="on"
 		 includeantruntime="false">
 			<compilerarg value="-Xlint:unchecked"/>
@@ -46,7 +54,7 @@
 
 	<target name="compilecompiler">
 		<mkdir dir="${build.dir}/${ant.project.name}/minijava"/>
-		<java  jar="${antlr.jar}" classpath="${antlr.jar}" fork="true">
+		<java  jar="${lib.dir}/${antlr.jar}" classpath="${lib.dir}/${antlr.jar}" fork="true">
 			<arg value="-o"/>
 			<arg value="${build.dir}/"/>
 			<arg value="${grammar}"/>
@@ -60,7 +68,7 @@
 		<jar destfile="${ant.project.name}.jar" basedir="${bin.dir}">
 			<manifest>
 				<attribute name="Main-Class" value="mjc.Main"/>
-				<attribute name="Class-Path" value="${antlr.jar}"/>
+				<attribute name="Class-Path" value="${lib.dir}/${antlr.jar}"/>
 			</manifest>
 		</jar>
 		<chmod file="${ant.project.name}.jar" perm="ugo+rx" />
@@ -72,7 +80,7 @@
 			<fileset dir="." includes="**/*.class"/>
 		</delete>
 		<delete dir="${build.dir}" failonerror="false" quiet="true"/>
-		<delete file="${ant.project.name}.jar" quiet="true" verbose="true"/>
+		<!-- <delete file="${ant.project.name}.jar" quiet="true" verbose="true"/> -->
 		<delete file="johfog_oskarseg.tar.gz" quiet="true" verbose="true"/>
 		<delete quiet="true" verbose="true">
 			<fileset dir="." includes="**/*~"/>
@@ -93,11 +101,11 @@
 	</target>
 
 	<target name="pirun" >
-		<java jar="./mjc.jar" fork="true">
+		<!-- <java jar="./mjc.jar" fork="true">
 			<arg value="${tests.dir}/${test.path}"/>
-			<arg value="--target=ARM"/>
+			<arg value="- -target=ARM"/>
 			<arg value="-wdS"/>
-		</java>
+		</java> -->
 
 		<scp todir="komp@motherbrain.zephyyrr.se:mjc/"
 			port="3678"
@@ -138,5 +146,5 @@
 		</exec>
 	</target>
 
-	<target name="all" depends="clean, jar, run" />
+	<target name="all" depends="requirements, jar, run" />
 </project>
