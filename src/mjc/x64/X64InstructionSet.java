@@ -133,14 +133,14 @@ public class X64InstructionSet extends ComplexInstructionSet {
 		for (int i = 0; i < X64Frame.volatyle.size(); i++) {
 			is.then( Operation.create(String.format("movq    %s, %d(%s)",
 				X64Frame.t2s.get(X64Frame.volatyle.get(i)),
-				(args + i + 1) * X64Frame.WORDSIZE,
+				(args + i) * X64Frame.WORDSIZE,
 				X64Frame.t2s.get(X64Frame.$stack))));
 		}
 		is.then(call);
 		is.then(comment("Volatile Register load-back"));
 		for (int i = X64Frame.volatyle.size()-1; i >= 0 ; i--) {
 			is.then(Operation.create(String.format("movq    %d(%s), %s",
-				(args + i + 1) * X64Frame.WORDSIZE,
+				(args + i) * X64Frame.WORDSIZE,
 				X64Frame.t2s.get(X64Frame.$stack),
 				X64Frame.t2s.get(X64Frame.volatyle.get(i)))));
 		}

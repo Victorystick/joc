@@ -65,7 +65,7 @@ public class X64Frame extends Frame {
 		);
 
 	public static final List<Temp> available = Arrays.asList(
-			eax, ebx, ecx, edx, ebp, esi, edi,
+			eax, ebx, ecx, edx, esi, edi,
 			r8d, r9d, r10d, r11d, r12d, r13d, r14d, r15d
 		);
 
@@ -147,10 +147,16 @@ public class X64Frame extends Frame {
 		return curr;
 	}
 
+	/**
+	 * Informs the Frame that a variable will be used.
+	 * TODO: Support escaping (stack) variables.
+	 *
+	 * @param  escapes Whether the variable should escape.
+	 */
 	public Access allocLocal(boolean escapes) {
-		if (escapes) {
-			return InFrame.create(nextOffset());
-		}
+		// if (escapes) {
+		// 	return InFrame.create(nextOffset());
+		// }
 		return InRegister.create();
 	}
 
@@ -176,7 +182,7 @@ public class X64Frame extends Frame {
 				Memory.create(
 					Binary.create(
 						BinOp.PLUS,
-						r13,
+						$stack,
 						(i - ARGS_IN_REGISTERS) * WORDSIZE / 2)),
 				val);
 		}
@@ -232,11 +238,16 @@ public class X64Frame extends Frame {
 			.then(is.comment("Function " + name.label))
 			.then(is.label(name))
 			.then(Operation.createDef(registers))
+			.then(Operation.create("pushq   %rbp"))
+			.then(is.move($frame, $stack))
+			// .then(Operation.create("pushq   %r10"))
+			.then(is.sub($stack,
+				Const.create((volatyle.size() + maximumStackArguments) * WORDSIZE)));
 			// .then(Operation.create("enter   " +
 			// 	maximumStackArguments * WORDSIZE / 2 + ", 0"))
 			// .then(is.sub($stack, $stack,
 			// 	Const.create(maximumStackArguments * WORDSIZE / 2)))
-			.then(Operation.createUse(callee_saved));
+			// .then(Operation.createUse(callee_saved));
 
 		// if (makesACall) {
 		// 	seq.then(is.sub($stack, $stack,
@@ -280,6 +291,8 @@ public class X64Frame extends Frame {
 			.then(Operation.createDef(callee_saved))
 			.then(Operation.createDef(Arrays.asList(r11, r15)))
 			.then(Operation.createUse(returnSink))
+			.then(Operation.create("leave"))
+			// .then(Operation.create("popq    %rbp"))
 			.then(Operation.create("ret"))
 			.then(is.comment("End " + name.label));
 	}
